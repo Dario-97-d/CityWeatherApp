@@ -1,0 +1,90 @@
+﻿@page "/SearchCity"
+@using System.Text.Json;
+@using CityWeatherApp.Data.Models
+@using CityWeatherApp.Data.Services;
+@inject NavigationManager NavManager
+@inject SearchCityService SearchCityService
+
+<h3>Search City</h3>
+<hr />
+
+<div>
+    <!-- City Search Input -->
+    <div class="mb-3">
+        <label class="form-label">City</label>
+        <input type="text" class="form-control" placeholder="" @bind="_cityName" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Country</label>
+        <input type="text" class="form-control" placeholder="(optional)" @bind="_country" />
+    </div>
+
+    <div><button class="btn btn-success" @onclick="SearchCities">Search</button></div>
+</div>
+
+<div>
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <hr />
+        <p>An error occurred. Maybe try again later.</p>
+        <p>@_errorMessage</p>
+    }
+    else if (_cities != null && _cities.Any())
+    {
+        <hr />
+        @foreach (var city in _cities)
+        {
+            <div class="mb-3 p-2" style="background-color: rgba(255,255,191,0.5); padding: 8px; border: 2px solid navy; border-radius: 8px;">
+                
+                <span class="btn btn-primary my-1" @onclick="() => NavigateToWeather(city)">@city.Name (@city.Country)</span>
+                
+                <p class="mt-2">@city.Latitude, @city.Longitude</p>
+
+                <a href="https://www.google.com/maps?q=@city.Latitude,@city.Longitude"><span class="oi oi-map-marker" style="color: #ea4335;"></span> <u>See map</u></a>
+            </div>
+        }
+    }
+    else if (_cities != null)
+    {
+        <hr />
+        <p>No matches found.</p>
+    }
+    else if (_searched)
+    {
+        <hr />
+        <p>Searching cities ...</p>
+    }
+</div>
+
+@code {
+    private string _errorMessage;
+
+    private bool _searched = false;
+
+    private string _cityName = "";
+    private string? _country = "";
+
+    private List<City> _cities;
+
+    private async Task SearchCities()
+    {
+        // This makes the message "Fetching cities..." appear.
+        _searched = true;
+
+        try
+        {
+            _cities = await SearchCityService.SearchCityAsync(_cityName, _country);
+        }
+        catch
+        {
+            _errorMessage = "Could not get matching cities.";
+        }
+    }
+
+    private void NavigateToWeather(City city)
+    {
+        string cityData = JsonSerializer.Serialize(city);
+        string escapedData = Uri.EscapeDataString(cityData);
+        NavManager.NavigateTo($"/GetWeather/{escapedData}");
+    }
+}

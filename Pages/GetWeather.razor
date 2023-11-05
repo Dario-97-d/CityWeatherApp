@@ -1,0 +1,81 @@
+﻿@page "/GetWeather/{CityData}"
+@using System.Text.Json;
+@using CityWeatherApp.Data.Models;
+@using CityWeatherApp.Data.Models.Weather;
+@using CityWeatherApp.Data.Services;
+@inject GetWeatherService GetWeatherService
+
+<h3>Weather at @Location</h3>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <hr />
+    <p>An error occurred. Maybe try again later.</p>
+    <p>@_errorMessage</p>
+}
+else if (_weather == null)
+{
+    <p>Fetching data...</p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <img src="@_weather.IconUrl" alt="(@_weather.Brief)" style="margin-right: 10px;" />
+        <p style="margin: 0; flex: 1;">@_weather.Description</p>
+    </div>
+    
+    <p>
+        Temperature: @_weather.TemperatureC °C / @_weather.TemperatureF F
+        <br />
+        Feels like: @_weather.FeelsLikeC °C / @_weather.FeelsLikeF F
+    </p>
+
+    <p>
+        Cloud coverage: @_weather.CloudCoverage %
+        <br />
+        Humidity: @_weather.Humidity %
+        <br />
+        Air pressure: @_weather.AirPressureBar bar
+    </p>
+
+    <p>Wind: @_weather.WindSpeedKph kph / @_weather.WindSpeedMph mph (@_weather.WindDirection)</p>
+
+    <p>Sun rise/set: @_weather.Sunrise / @_weather.Sunset (@_weather.HoursOfLight hours of light)</p>
+}
+
+@code {
+    [Parameter] public string CityData { get; set; }
+
+    private string _errorMessage;
+
+    private City _city;
+    private WeatherDisplayModel _weather;
+
+    private string Location => string.IsNullOrEmpty(_city?.Name ?? string.Empty)
+        ? "error" : _city.Name;
+
+    protected override async void OnParametersSet()
+    {
+        // Deserialize CityData.
+        if (!string.IsNullOrEmpty(CityData))
+        {
+            _city = JsonSerializer.Deserialize<City>(Uri.UnescapeDataString(CityData));
+
+            // Fetch weather data for the specified city (based on _city)
+            if (_city != null)
+            {
+                try
+                {
+                    var apiModel = await GetWeatherService.GetWeatherAsync(_city.Latitude, _city.Longitude);
+                    _weather = apiModel.ApiToDisplay();
+                }
+                catch
+                {
+                    _errorMessage = "Could not get weather.";
+                }
+
+                StateHasChanged();
+            }
+        }
+    }
+}

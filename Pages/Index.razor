@@ -1,0 +1,113 @@
+﻿@page "/"
+@using System.Globalization;
+@using System.Text.Json;
+@using CityWeatherApp.Data.Models;
+@using CityWeatherApp.Data.Models.Weather;
+@using CityWeatherApp.Data.Services;
+@inject GetWeatherService GetWeatherService
+
+<h3>Weather at current location</h3>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <hr />
+    <p>An error occurred. Maybe try searching a specific city.</p>
+    <p>@_errorMessage</p>
+}
+else if (_weather == null)
+{
+    <p>Fetching data...</p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <img src="@_weather.IconUrl" alt="(@_weather.Brief)" style="margin-right: 10px;" />
+        <p style="margin: 0; flex: 1;">@_weather.Description</p>
+    </div>
+
+    <p>
+        Temperature: @_weather.TemperatureC °C / @_weather.TemperatureF F
+        <br />
+        Feels like: @_weather.FeelsLikeC °C / @_weather.FeelsLikeF F
+    </p>
+
+    <p>
+        Cloud coverage: @_weather.CloudCoverage %
+        <br />
+        Humidity: @_weather.Humidity %
+        <br />
+        Air pressure: @_weather.AirPressureBar bar
+    </p>
+
+    <p>Wind: @_weather.WindSpeedKph kph / @_weather.WindSpeedMph mph (@_weather.WindDirection)</p>
+
+    <p>Sun rise/set: @_weather.Sunrise / @_weather.Sunset (@_weather.HoursOfLight hours of light)</p>
+}
+
+@code {
+    private string _errorMessage;
+
+    private City _city;
+    private WeatherDisplayModel _weather;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RequestLocationPermissionAsync();
+    }
+
+    private async Task RequestLocationPermissionAsync()
+    {
+        var status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+        if (status == PermissionStatus.Granted)
+        {
+            await FetchWeatherDataAsync();
+        }
+        else
+        {
+            _errorMessage = "Location permission was denied.";
+        }
+
+        // Ensure UI updates after permission status changes
+        StateHasChanged();
+    }
+
+    private async Task FetchWeatherDataAsync()
+    {
+        try
+        {
+            var location = await Geolocation.GetLocationAsync(new GeolocationRequest());
+            if (location != null)
+            {
+                var latitude = double.Round(location.Latitude, 6).ToString(CultureInfo.InvariantCulture);
+                var longitude = double.Round(location.Longitude, 6).ToString(CultureInfo.InvariantCulture);
+
+                // Fetch weather data for the current location
+                try
+                {
+                    var apiModel = await GetWeatherService.GetWeatherAsync(latitude, longitude);
+                    _weather = apiModel.ApiToDisplay();
+                }
+                catch
+                {
+                    _errorMessage = "Could not get weather for the current location.";
+                }
+            }
+            else
+            {
+                _errorMessage = "Location services are not available or were denied.";
+            }
+        }
+        catch (FeatureNotSupportedException)
+        {
+            _errorMessage = "Location services are not supported on this device.";
+        }
+        catch (PermissionException)
+        {
+            _errorMessage = "Location permission was denied.";
+        }
+        catch
+        {
+            _errorMessage = "An unknown error occurred.";
+        }
+    }
+}

@@ -1,0 +1,24 @@
+﻿@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @_errorMessage
+        <button type="button" class="close" @onclick="ClearErrorMessage">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@code {
+    private string _errorMessage;
+
+    private void ClearErrorMessage()
+    {
+        _errorMessage = "";
+    }
+
+    public void ShowErrorMessage(string message)
+    {
+        _errorMessage = message;
+        StateHasChanged();
+    }
+}
