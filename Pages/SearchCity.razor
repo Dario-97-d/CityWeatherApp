@@ -34,13 +34,13 @@
         <hr />
         @foreach (var city in _cities)
         {
-            <div class="mb-3 p-2" style="background-color: rgba(255,255,191,0.5); padding: 8px; border: 2px solid navy; border-radius: 8px;">
+            <div class="mb-3" style="background-color: rgba(255,255,191,0.25); padding: 0.5rem 0.75rem; border-radius: 8px; box-shadow: gray 0 0 0.25rem;">
                 
                 <span class="btn btn-primary my-1" @onclick="() => NavigateToWeather(city)">@city.Name (@city.Country)</span>
                 
                 <p class="mt-2">@city.Latitude, @city.Longitude</p>
 
-                <a href="https://www.google.com/maps?q=@city.Latitude,@city.Longitude"><span class="oi oi-map-marker" style="color: #ea4335;"></span> <u>See map</u></a>
+                <a href="https://www.google.com/maps?q=@city.Latitude,@city.Longitude"><span class="oi oi-map-marker" style="color: #ea4335;"></span> <u>On Google Maps</u></a>
             </div>
         }
     }
